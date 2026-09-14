@@ -6,6 +6,9 @@ const config: NextConfig = {
   // These resolve binary paths relative to their own location on disk, so they
   // must stay outside the server bundle or the paths break.
   serverExternalPackages: ["@prisma/client", "ffmpeg-static", "ffprobe-static"],
+  outputFileTracingIncludes: {
+    "/**": ["./prisma/dev.db"],
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },
