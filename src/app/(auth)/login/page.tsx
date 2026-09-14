@@ -23,8 +23,7 @@ function LoginForm() {
     setLoading(true);
     try {
       await post("/api/auth/login", { email, password });
-      router.push(next);
-      router.refresh();
+      window.location.href = next;
     } catch (err) {
       setError(errorMessage(err));
       setLoading(false);

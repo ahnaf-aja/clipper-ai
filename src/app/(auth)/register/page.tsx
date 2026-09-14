@@ -37,8 +37,7 @@ function RegisterForm() {
     setLoading(true);
     try {
       await post("/api/auth/register", { name, email, password });
-      router.push(next);
-      router.refresh();
+      window.location.href = next;
     } catch (err) {
       setError(errorMessage(err));
       setLoading(false);
