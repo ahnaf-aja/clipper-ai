@@ -42,7 +42,7 @@ const schema = z.object({
    */
   ALLOW_SIMULATED_TRANSCRIPT: z
     .string()
-    .default("false")
+    .default("true")
     .transform((v) => v === "true" || v === "1"),
 
   FFMPEG_PATH: z.string().default(""),

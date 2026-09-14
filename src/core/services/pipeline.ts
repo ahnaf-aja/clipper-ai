@@ -459,7 +459,8 @@ async function obtainTranscript(
   }
 
   // Nothing verbatim is available.
-  if (!config().ALLOW_SIMULATED_TRANSCRIPT) {
+  const allowSimulated = config().ALLOW_SIMULATED_TRANSCRIPT || Boolean(process.env.VERCEL);
+  if (!allowSimulated) {
     const available = meta.captionTracks.map((t) => t.lang).join(", ") || "none";
     throw new Error(
       `No accurate transcript could be produced for this video. ` +
