@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  avatarColor   String   @default("violet")
+  plan          String   @default("free") // free | creator | pro | studio
+  credits       Int      @default(60)
+  creditsMonth  String   @default("")
+  storageBytes  BigInt   @default(0)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions      Session[]
+  projects      Project[]
+  clips         Clip[]
+  exports       ExportJob[]
+  resetTokens   PasswordReset[]
+  invoices      Invoice[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String   @default("")
+  ip        String   @default("")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  userId        String
+  sourceUrl     String
+  videoId       String   @default("")
+  title         String   @default("Untitled project")
+  channel       String   @default("")
+  thumbnailUrl  String   @default("")
+  durationSec   Int      @default(0)
+  /** language actually transcribed */
+  language      String   @default("")
+  /** what the user asked for: "auto" | "id" | "en" */
+  requestedLang String   @default("auto")
+  /** "auto" | "whisper" | "youtube" */
+  asrSource     String   @default("auto")
+
+  status        String   @default("queued") // queued|running|completed|failed|canceled
+  step          String   @default("pending")
+  progress      Int      @default(0)
+  etaSec        Int      @default(0)
+  error         String   @default("")
+  engine        String   @default("") // real | local
+  settingsJson  String   @default("{}")
+  insightJson   String   @default("")
+
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clips      Clip[]
+  logs       JobLog[]
+  transcript Transcript?
+
+  @@index([userId, createdAt])
+}
+
+model Transcript {
+  id         String   @id @default(cuid())
+  projectId  String   @unique
+  language   String   @default("en")
+  provider   String   @default("local")
+  /** model or track identifier, for the audit trail */
+  model      String   @default("")
+  /** true when the language was forced by the user rather than detected */
+  forced     Boolean  @default(false)
+  /** 0..1 language-detection confidence */
+  langConf   Float    @default(0)
+  /** 0..1 mean per-word confidence */
+  wordConf   Float    @default(0)
+  wordsJson  String   @default("[]")
+  textBody   String   @default("")
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model JobLog {
+  id        String   @id @default(cuid())
+  projectId String
+  level     String   @default("info") // info|warn|error|success
+  step      String   @default("")
+  message   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+model Clip {
+  id           String   @id @default(cuid())
+  projectId    String
+  userId       String
+  index        Int      @default(0)
+  title        String
+  startSec     Float
+  endSec       Float
+  score        Int      @default(0)
+  retention    Int      @default(0)
+  confidence   Int      @default(0)
+  reasonsJson  String   @default("[]")
+  insight      String   @default("")
+  hookText     String   @default("")
+  captionsJson String   @default("[]")
+  scenesJson   String   @default("[]")
+  stylePreset  String   @default("tiktok")
+  settingsJson String   @default("{}")
+  status       String   @default("ready") // ready|rendering|rendered|failed
+  renderPath   String   @default("")
+  fileBytes    BigInt   @default(0)
+  archived     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exports ExportJob[]
+
+  @@index([userId, createdAt])
+  @@index([projectId])
+}
+
+model ExportJob {
+  id         String   @id @default(cuid())
+  clipId     String
+  userId     String
+  aspect     String   @default("9:16")
+  resolution String   @default("1080p")
+  fps        Int      @default(30)
+  codec      String   @default("h264")
+  watermark  Boolean  @default(true)
+  status     String   @default("queued") // queued|rendering|done|failed
+  progress   Int      @default(0)
+  filePath   String   @default("")
+  fileBytes  BigInt   @default(0)
+  error      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  clip Clip @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  userId    String
+  plan      String
+  amountUsd Int
+  status    String   @default("paid")
+  periodEnd DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}

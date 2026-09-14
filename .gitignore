@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.env
+*.db
+*.db-journal
+storage/
+bin/
+.DS_Store
+next-env.d.ts
+tsconfig.tsbuildinfo
+.claude/
